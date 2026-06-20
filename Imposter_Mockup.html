@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Imposter — Flow Prototype</title>
+<style>
+  :root{
+    --ink:#202024; --ink2:#55555c; --line:#d7d7dc; --bg:#ececed;
+    --card:#ffffff; --accent:#5b50c6; --accent-soft:#ece9fb;
+    --ok:#1f7a4d; --bad:#b23b3b; --warn:#9a6b00;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{
+    font-family:-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:#c9c9cc; color:var(--ink); min-height:100vh;
+    display:flex; align-items:center; justify-content:center; padding:18px;
+    background-image:radial-gradient(#bcbcbf 1px,transparent 1px); background-size:18px 18px;
+  }
+  .protobar{
+    position:fixed; top:0; left:0; right:0; text-align:center; font-size:10px;
+    letter-spacing:2px; text-transform:uppercase; color:#6a6a70; padding:6px;
+    background:#dededf; border-bottom:1px solid #c4c4c8; z-index:50; font-weight:700;
+  }
+  .phone{
+    width:380px; max-width:100%; height:760px; background:var(--bg);
+    border:10px solid #1c1c1f; border-radius:38px; overflow:hidden; position:relative;
+    box-shadow:0 24px 60px rgba(0,0,0,.35); display:flex; flex-direction:column;
+  }
+  .notch{height:26px;background:#1c1c1f;border-radius:0 0 16px 16px;width:140px;margin:0 auto;flex:none}
+  .screen{flex:1;overflow-y:auto;padding:22px 20px 26px;display:none}
+  .screen.active{display:block;animation:fade .25s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  h1.logo{font-size:30px;font-weight:900;letter-spacing:-1px;line-height:.95}
+  h1.logo span{display:block;background:var(--ink);color:var(--ink);border-radius:4px;width:max-content;padding:0 6px}
+  .tagline{color:var(--ink2);font-size:12px;margin-top:8px}
+  .label{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#86868c;font-weight:800;margin:22px 0 8px}
+  .seg{display:flex;background:#e0e0e2;border-radius:14px;padding:5px;gap:5px}
+  .seg button{flex:1;border:0;background:transparent;padding:13px;border-radius:10px;font-weight:700;font-size:14px;color:var(--ink2)}
+  .seg button.on{background:var(--ink);color:#fff}
+  .hint{font-size:11px;color:var(--ink2);line-height:1.5;margin-top:8px}
+  .field{width:100%;border:1px solid var(--line);background:#fff;border-radius:12px;padding:13px 14px;font-size:15px;color:var(--ink)}
+  select.field{appearance:none;background-image:linear-gradient(45deg,transparent 50%,#999 50%),linear-gradient(135deg,#999 50%,transparent 50%);background-position:calc(100% - 18px) 18px,calc(100% - 13px) 18px;background-size:5px 5px;background-repeat:no-repeat}
+  .btn{display:block;width:100%;border:0;border-radius:14px;padding:16px;font-size:16px;font-weight:800;background:var(--accent);color:#fff;margin-top:14px}
+  .btn:active{transform:scale(.99)}
+  .btn.ghost{background:#e0e0e2;color:var(--ink)}
+  .btn.dark{background:var(--ink)}
+  .btn[disabled]{opacity:.4}
+  .row{display:flex;gap:8px;align-items:center;margin-top:8px}
+  .namechip{flex:1;display:flex;align-items:center;justify-content:space-between;background:#fff;border:1px solid var(--line);border-radius:10px;padding:11px 12px;font-weight:600;font-size:14px}
+  .namechip button{border:0;background:transparent;color:var(--bad);font-size:18px;font-weight:700;padding:0 4px}
+  .grid{display:flex;flex-wrap:wrap;gap:7px;margin-top:6px}
+  .grid .namechip{flex:0 0 calc(50% - 4px)}
+  .mutebar{display:flex;align-items:center;justify-content:space-between;border:1px solid var(--line);background:#fff;border-radius:12px;padding:11px 14px;margin-top:10px;font-size:13px;font-weight:600}
+  .toggle{width:46px;height:27px;border-radius:20px;background:#cfcfd4;position:relative;transition:.2s;flex:none}
+  .toggle.on{background:var(--accent)}
+  .toggle::after{content:"";position:absolute;width:21px;height:21px;border-radius:50%;background:#fff;top:3px;left:3px;transition:.2s}
+  .toggle.on::after{left:22px}
+  .warn{background:#fff7e6;border:1px solid #f0dca8;color:var(--warn);font-size:12px;border-radius:10px;padding:10px 12px;margin-top:10px;font-weight:600;display:none}
+  /* deal */
+  .passto{text-align:center;color:var(--ink2);font-size:13px;margin-top:6px}
+  .passto b{color:var(--ink);font-size:17px;display:block;margin-top:4px}
+  .roundinfo{text-align:center;font-size:11px;color:#86868c;letter-spacing:1px;text-transform:uppercase;font-weight:700;margin-top:14px}
+  .dealcard{margin-top:18px;height:300px;border-radius:22px;background:var(--ink);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;user-select:none;position:relative;padding:20px}
+  .dealcard .who{font-size:30px;font-weight:900}
+  .dealcard .press{font-size:12px;color:#b9b9c4;margin-top:14px;letter-spacing:.5px}
+  .dealcard.revealed{background:var(--accent)}
+  .reveal-team{font-size:12px;letter-spacing:2px;text-transform:uppercase;opacity:.85;font-weight:700}
+  .reveal-role{font-size:13px;margin-top:14px;opacity:.85}
+  .reveal-word{font-size:34px;font-weight:900;margin-top:4px}
+  .hidden{display:none}
+  /* vote */
+  .votelist{display:flex;flex-direction:column;gap:8px;margin-top:6px}
+  .voteitem{display:flex;align-items:center;justify-content:space-between;border:1px solid var(--line);background:#fff;border-radius:12px;padding:14px;font-weight:700;font-size:15px}
+  .voteitem:active{background:var(--accent-soft);border-color:var(--accent)}
+  .voteitem.dead{opacity:.4;text-decoration:line-through}
+  /* modal */
+  .modal{position:absolute;inset:0;background:rgba(20,20,24,.55);display:none;align-items:center;justify-content:center;padding:26px;z-index:30}
+  .modal.show{display:flex}
+  .sheet{background:#fff;border-radius:18px;padding:22px;width:100%;text-align:center}
+  .sheet h3{font-size:18px;margin-bottom:6px}
+  .sheet p{font-size:13px;color:var(--ink2);margin-bottom:16px}
+  /* drumroll / verdict */
+  .center{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+  .drum{font-size:15px;letter-spacing:3px;text-transform:uppercase;color:var(--ink2);font-weight:800}
+  .dots span{display:inline-block;animation:b 1s infinite}
+  .dots span:nth-child(2){animation-delay:.2s}.dots span:nth-child(3){animation-delay:.4s}
+  @keyframes b{0%,100%{opacity:.2}50%{opacity:1}}
+  .verdict{font-size:24px;font-weight:900;line-height:1.2;padding:0 10px}
+  .verdict.bad{color:var(--bad)}.verdict.ok{color:var(--ok)}
+  .verdict-sub{font-size:13px;color:var(--ink2);margin-top:10px}
+  /* winner */
+  .trophy{font-size:46px}
+  .winteam{font-size:30px;font-weight:900;margin:6px 0 2px}
+  .teamblock{border:1px solid var(--line);background:#fff;border-radius:12px;padding:12px 14px;margin-top:10px;text-align:left}
+  .teamblock h4{font-size:12px;letter-spacing:1px;text-transform:uppercase;color:#86868c;margin-bottom:6px}
+  .teamblock .m{font-size:14px;padding:3px 0;display:flex;justify-content:space-between}
+  .imp{color:var(--bad);font-weight:800;font-size:11px}
+  /* quit */
+  .quitbtn{position:absolute;top:36px;left:16px;z-index:25;width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:#fff;color:var(--ink2);font-size:18px;font-weight:700;display:none;align-items:center;justify-content:center;line-height:1}
+  .quitbtn.show{display:flex}
+</style>
+</head>
+<body>
+<div class="protobar">Prototype — flow only, design comes later</div>
+<div class="phone">
+  <div class="notch"></div>
+  <button class="quitbtn" id="quitBtn" onclick="askQuit()" title="Quit to home">×</button>
+
+  <!-- 1. HOME -->
+  <div class="screen active" id="s-home">
+    <h1 class="logo">IMPOSTER<span>WHO?</span></h1>
+    <p class="tagline">Free · offline · pass the phone</p>
+
+    <div class="label">Game mode</div>
+    <div class="seg" id="modeSeg">
+      <button data-mode="team" class="on">Team</button>
+      <button data-mode="classic">Classic</button>
+    </div>
+    <p class="hint" id="modeHint">Hidden teams. One imposter hidden in each team — you know your team, not who's on it.</p>
+
+    <div class="label">Category</div>
+    <select class="field" id="categorySel">
+      <option value="random">🎲 Random</option>
+    </select>
+
+    <div class="mutebar">
+      <span>🔊 Sound</span>
+      <div class="toggle on" id="muteToggle"></div>
+    </div>
+
+    <button class="btn" onclick="goSetup()">Continue</button>
+  </div>
+
+  <!-- 2. SETUP -->
+  <div class="screen" id="s-setup">
+    <div class="label">Players</div>
+    <div class="row">
+      <input class="field" id="nameInput" placeholder="Add a name" onkeydown="if(event.key==='Enter')addName()">
+      <button class="btn" style="width:auto;margin:0;padding:14px 18px" onclick="addName()">+</button>
+    </div>
+    <div class="grid" id="nameList"></div>
+
+    <div id="teamSetup">
+      <div class="label">Number of teams</div>
+      <input class="field" id="teamCount" type="number" min="2" value="3" inputmode="numeric" oninput="validateTeams()">
+      <div class="warn" id="teamWarn"></div>
+    </div>
+
+    <div id="classicSetup">
+      <div class="label">Number of imposters</div>
+      <input class="field" id="impCount" type="number" min="1" value="1" inputmode="numeric" oninput="validateTeams()">
+      <div class="warn" id="impWarn"></div>
+    </div>
+
+    <button class="btn" id="startBtn" onclick="startGame()">Start game</button>
+    <button class="btn ghost" onclick="show('s-home')">Back</button>
+  </div>
+
+  <!-- 3. DEAL -->
+  <div class="screen" id="s-deal">
+    <p class="passto">Pass the phone to<b id="dealName">—</b></p>
+    <div class="dealcard" id="dealCard">
+      <div id="dealFront">
+        <div class="who" id="dealWho">—</div>
+        <div class="press">press &amp; hold to reveal</div>
+      </div>
+      <div id="dealBack" class="hidden">
+        <div class="reveal-team" id="revealTeam"></div>
+        <div class="reveal-role" id="revealRole"></div>
+        <div class="reveal-word" id="revealWord"></div>
+      </div>
+    </div>
+    <p class="roundinfo" id="dealRound"></p>
+    <button class="btn" id="dealNext" onclick="dealNext()">Next player →</button>
+  </div>
+
+  <!-- 4. VOTE -->
+  <div class="screen" id="s-vote">
+    <div class="label" id="voteRound">Round 1</div>
+    <p class="hint">Give clues out loud, debate, then tap whoever the room votes out. (Ties → rock-paper-scissors in real life.)</p>
+    <div class="votelist" id="voteList"></div>
+  </div>
+
+  <!-- 5. REVEAL -->
+  <div class="screen" id="s-reveal">
+    <div class="center">
+      <div id="drumPhase">
+        <div class="drum">Drumroll<span class="dots"><span>.</span><span>.</span><span>.</span></span></div>
+      </div>
+      <div id="verdictPhase" class="hidden">
+        <div class="verdict" id="verdictText"></div>
+        <div class="verdict-sub" id="verdictSub"></div>
+        <button class="btn" id="verdictBtn" style="margin-top:26px;width:200px" onclick="afterVerdict()">Continue</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. WINNER -->
+  <div class="screen" id="s-winner">
+    <div class="center" style="height:auto;margin-top:10px">
+      <div class="trophy">🏆</div>
+      <div class="winteam" id="winTeam">—</div>
+      <div class="verdict-sub" id="winSub"></div>
+    </div>
+    <div class="label">The full reveal</div>
+    <div id="revealAll"></div>
+    <button class="btn" onclick="playAgainSame()">Play again — same names</button>
+    <button class="btn ghost" onclick="playAgainNew()">New names</button>
+  </div>
+
+  <!-- confirm modal -->
+  <div class="modal" id="confirmModal">
+    <div class="sheet">
+      <h3 id="confirmName">Vote out?</h3>
+      <p>Make sure the room agrees — this can't be undone.</p>
+      <button class="btn dark" onclick="confirmVote()">Yes, vote out</button>
+      <button class="btn ghost" onclick="closeModal()">Cancel</button>
+    </div>
+  <!-- quit modal -->
+  <div class="modal" id="quitModal">
+    <div class="sheet">
+      <h3>Quit to home?</h3>
+      <p>This game will end and can't be recovered.</p>
+      <button class="btn dark" onclick="doQuit()">Yes, quit</button>
+      <button class="btn ghost" onclick="$('quitModal').classList.remove('show')">Keep playing</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ---------- tiny word bank (mockup-sized) ---------- */
+const BANK = {
+  "Everyday Objects":[
+    {w:"Window",c:["view","glass","frame","light"]},
+    {w:"Umbrella",c:["rain","cover","fold","shade"]},
+    {w:"Mirror",c:["reflection","glass","face","shine"]},
+    {w:"Ladder",c:["climb","steps","height","reach"]},
+  ],
+  "Food & Drinks":[
+    {w:"Pizza",c:["slice","cheese","round","oven"]},
+    {w:"Coffee",c:["morning","bitter","cup","awake"]},
+    {w:"Banana",c:["yellow","peel","curve","soft"]},
+    {w:"Ice cream",c:["cold","scoop","melt","sweet"]},
+  ],
+  "Animals":[
+    {w:"Elephant",c:["trunk","grey","huge","memory"]},
+    {w:"Penguin",c:["cold","waddle","suit","ice"]},
+    {w:"Shark",c:["teeth","ocean","fin","fear"]},
+    {w:"Owl",c:["night","wise","silent","eyes"]},
+  ],
+  "Places":[
+    {w:"Beach",c:["sand","waves","sun","towel"]},
+    {w:"Airport",c:["travel","wait","gate","luggage"]},
+    {w:"Hospital",c:["white","quiet","care","beds"]},
+    {w:"Library",c:["quiet","books","study","shh"]},
+  ],
+  "Singing Artists":[
+    {w:"Beyoncé",c:["pop","stage","icon","powerful"]},
+    {w:"Drake",c:["rap","Toronto","charts","mood"]},
+    {w:"Rihanna",c:["pop","island","brand","voice"]},
+    {w:"Burna Boy",c:["afrobeats","Nigeria","energy","grammy"]},
+    {w:"Taylor Swift",c:["pop","stories","fans","eras"]},
+    {w:"The Weeknd",c:["night","falsetto","moody","hits"]},
+    {w:"Tyla",c:["amapiano","viral","dance","SouthAfrica"]},
+    {w:"Ed Sheeran",c:["acoustic","ginger","loop","ballads"]},
+  ],
+  "Movies":[
+    {w:"Titanic",c:["ship","romance","ocean","tragedy"]},
+    {w:"Avatar",c:["blue","aliens","jungle","3D"]},
+    {w:"Inception",c:["dreams","layers","mind","spinning"]},
+    {w:"Avengers",c:["heroes","team","battle","marvel"]},
+    {w:"Jurassic Park",c:["dinosaurs","island","science","chaos"]},
+    {w:"Black Panther",c:["wakanda","king","vibranium","hero"]},
+    {w:"Joker",c:["clown","dark","laugh","chaos"]},
+    {w:"Spider-Man",c:["web","spider","hero","city"]},
+  ],
+  "Anime Shows":[
+    {w:"Naruto",c:["ninja","village","orange","fox"]},
+    {w:"One Piece",c:["pirate","ocean","hat","treasure"]},
+    {w:"Attack on Titan",c:["titans","walls","war","freedom"]},
+    {w:"Dragon Ball",c:["fighters","energy","saiyan","power"]},
+    {w:"Demon Slayer",c:["demons","sword","breathing","night"]},
+    {w:"Death Note",c:["notebook","detective","rules","fate"]},
+    {w:"My Hero Academia",c:["heroes","quirks","school","power"]},
+    {w:"Pokémon",c:["creatures","trainer","battles","catch"]},
+  ],
+  "Cartoons":[
+    {w:"SpongeBob",c:["sea","sponge","yellow","fun"]},
+    {w:"Tom and Jerry",c:["cat","mouse","chase","silent"]},
+    {w:"The Simpsons",c:["yellow","family","town","satire"]},
+    {w:"The Lion King",c:["savanna","cub","kingdom","circle"]},
+    {w:"The Last Airbender",c:["elements","bending","balance","journey"]},
+    {w:"Rick and Morty",c:["portal","science","space","grandpa"]},
+    {w:"Ben 10",c:["watch","aliens","transform","hero"]},
+    {w:"Powerpuff Girls",c:["sugar","spice","heroines","city"]},
+  ],
+};
+const CATS = Object.keys(BANK);
+
+/* ---------- state ---------- */
+let S = {
+  mode:"team", category:"random", muted:false,
+  names:["Tediso","Andzi","Kamo","Andiswa","Kwezi","Mk","Lindani","Sipho","Nadia","Thabo","Zanele","Riaan"],
+  teams:[], playerTeam:{}, imposters:new Set(), clue:{}, word:"",
+  alive:new Set(), caught:new Set(), round:1, sinceWord:0, dealQ:[], dealAlive:[],
+  pending:null
+};
+
+/* ---------- helpers ---------- */
+const $=id=>document.getElementById(id);
+function show(id){document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));$(id).classList.add("active");$(id).scrollTop=0;
+  const inGame=["s-deal","s-vote","s-reveal"].includes(id);
+  $("quitBtn").classList.toggle("show",inGame);
+}
+function askQuit(){$("quitModal").classList.add("show");}
+function doQuit(){$("quitModal").classList.remove("show");$("confirmModal").classList.remove("show");show("s-home");}
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+/* ---------- sound (Web Audio, synth) ---------- */
+let AC;
+function ac(){if(!AC)AC=new(window.AudioContext||window.webkitAudioContext)();return AC;}
+function tone(f,t,dur,type="sine",vol=.2){if(S.muted)return;const c=ac();const o=c.createOscillator(),g=c.createGain();o.type=type;o.frequency.value=f;o.connect(g);g.connect(c.destination);g.gain.setValueAtTime(vol,c.currentTime+t);g.gain.exponentialRampToValueAtTime(.001,c.currentTime+t+dur);o.start(c.currentTime+t);o.stop(c.currentTime+t+dur);}
+function sndDrum(){if(S.muted)return;for(let i=0;i<14;i++)tone(90,i*0.09,0.08,"square",.12);}
+function sndCaught(){tone(330,0,.12,"sawtooth",.25);tone(247,.13,.4,"sawtooth",.25);}
+function sndInnocent(){tone(300,0,.2,"sine",.2);tone(180,.18,.45,"sine",.2);}
+function sndWin(){[523,659,784,1047].forEach((f,i)=>tone(f,i*.12,.3,"triangle",.22));}
+
+/* ---------- home ---------- */
+$("modeSeg").addEventListener("click",e=>{
+  const b=e.target.closest("button");if(!b)return;
+  S.mode=b.dataset.mode;
+  document.querySelectorAll("#modeSeg button").forEach(x=>x.classList.toggle("on",x===b));
+  $("modeHint").textContent = S.mode==="team"
+    ? "Hidden teams. One imposter hidden in each team — you know your team, not who's on it."
+    : "Classic. No teams — one imposter hides among everyone. A wrong vote still eliminates an innocent.";
+});
+$("muteToggle").addEventListener("click",()=>{S.muted=!S.muted;$("muteToggle").classList.toggle("on",!S.muted);});
+(function fillCats(){CATS.forEach(c=>{const o=document.createElement("option");o.value=c;o.textContent=c;$("categorySel").appendChild(o);});})();
+
+function goSetup(){S.category=$("categorySel").value;renderNames();$("teamSetup").style.display=S.mode==="team"?"block":"none";$("classicSetup").style.display=S.mode==="classic"?"block":"none";validateTeams();show("s-setup");}
+
+/* ---------- setup ---------- */
+function renderNames(){
+  const l=$("nameList");l.innerHTML="";
+  S.names.forEach((n,i)=>{
+    const d=document.createElement("div");d.className="namechip";
+    d.innerHTML=`<span>${n}</span><button onclick="delName(${i})">×</button>`;
+    l.appendChild(d);
+  });
+}
+function addName(){const v=$("nameInput").value.trim();if(!v)return;S.names.push(v);$("nameInput").value="";renderNames();validateTeams();}
+function delName(i){S.names.splice(i,1);renderNames();validateTeams();}
+function validateTeams(){
+  const warn=$("teamWarn");const start=$("startBtn");
+  if(S.mode==="classic"){
+    warn.style.display="none";
+    const iw=$("impWarn");const n=S.names.length;
+    const maxImp=Math.max(1,Math.floor((n-1)/2)); // innocents always outnumber imposters
+    let m="";
+    if(n<3) m="Add at least 3 players.";
+    else{
+      const imp=parseInt($("impCount").value||"0");
+      if(imp<1) m="At least 1 imposter.";
+      else if(imp>maxImp) m=`Too many. With ${n} players, max ${maxImp} imposter${maxImp>1?'s':''}.`;
+    }
+    iw.style.display=m?"block":"none";iw.textContent=m;start.disabled=!!m;return;
+  }
+  $("impWarn") && ($("impWarn").style.display="none");
+  const t=parseInt($("teamCount").value||"0");
+  let msg="";
+  if(S.names.length<6) msg="Add at least 6 players for team mode.";
+  else if(t<2) msg="You need at least 2 teams.";
+  else if(Math.floor(S.names.length/t)<3) msg=`${S.names.length} players into ${t} teams would put fewer than 3 in a team. Use fewer teams.`;
+  warn.style.display=msg?"block":"none";warn.textContent=msg;start.disabled=!!msg;
+}
+
+/* ---------- start / assign ---------- */
+function pickWord(){
+  let cat=S.category==="random"?CATS[Math.floor(Math.random()*CATS.length)]:S.category;
+  const e=BANK[cat][Math.floor(Math.random()*BANK[cat].length)];
+  S.word=e.w;return shuffle(e.c);
+}
+function startGame(){
+  const idx=S.names.map((_,i)=>i);
+  S.alive=new Set(idx);S.caught=new Set();S.round=1;S.sinceWord=0;S.imposters=new Set();S.clue={};S.playerTeam={};
+  if(S.mode==="team"){
+    const t=parseInt($("teamCount").value);
+    const sh=shuffle(idx);S.teams=Array.from({length:t},()=>[]);
+    sh.forEach((p,k)=>{S.teams[k%t].push(p);S.playerTeam[p]=k%t;});
+  }else{
+    S.teams=[idx.slice()];idx.forEach(p=>S.playerTeam[p]=0);
+  }
+  const clues=pickWord();let ci=0;
+  if(S.mode==="team"){
+    S.teams.forEach(team=>{const imp=team[Math.floor(Math.random()*team.length)];S.imposters.add(imp);S.clue[imp]=clues[ci++%clues.length];});
+  }else{
+    const nImp=Math.max(1,parseInt($("impCount").value||"1"));
+    const picks=shuffle(idx).slice(0,nImp);
+    picks.forEach((imp,k)=>{S.imposters.add(imp);S.clue[imp]=clues[k%clues.length];});
+  }
+  beginDeal([...S.alive]);
+}
+
+/* ---------- deal ---------- */
+function beginDeal(list){S.dealQ=list.slice();dealShow();show("s-deal");}
+function dealShow(){
+  if(S.dealQ.length===0){show("s-vote");renderVote();return;}
+  const p=S.dealQ[0];
+  $("dealName").textContent=S.names[p];
+  $("dealWho").textContent=S.names[p];
+  $("dealFront").classList.remove("hidden");$("dealBack").classList.add("hidden");
+  $("dealCard").classList.remove("revealed");
+  $("dealRound").textContent=`Round ${S.round} · ${S.sinceWord} round(s) since the word changed`;
+  $("dealNext").textContent = S.dealQ.length===1 ? "Everyone's seen — start round" : "Next player →";
+}
+function dealReveal(on){
+  const p=S.dealQ[0];if(p===undefined)return;
+  if(on){
+    const isImp=S.imposters.has(p);
+    $("revealTeam").textContent = S.mode==="team" ? `Team ${S.playerTeam[p]+1}` : "";
+    $("revealRole").textContent = isImp ? "Your clue word" : "The secret word";
+    $("revealWord").textContent = isImp ? S.clue[p] : S.word;
+    $("dealFront").classList.add("hidden");$("dealBack").classList.remove("hidden");
+    $("dealCard").classList.add("revealed");
+  }else{
+    $("dealFront").classList.remove("hidden");$("dealBack").classList.add("hidden");
+    $("dealCard").classList.remove("revealed");
+  }
+}
+(function bindHold(){
+  const c=$("dealCard");
+  const dn=e=>{e.preventDefault();dealReveal(true);};
+  const up=()=>dealReveal(false);
+  c.addEventListener("touchstart",dn,{passive:false});
+  c.addEventListener("touchend",up);c.addEventListener("touchcancel",up);
+  c.addEventListener("mousedown",dn);c.addEventListener("mouseup",up);c.addEventListener("mouseleave",up);
+})();
+function dealNext(){S.dealQ.shift();dealShow();}
+
+/* ---------- vote ---------- */
+function renderVote(){
+  $("voteRound").textContent=`Round ${S.round}`;
+  const l=$("voteList");l.innerHTML="";
+  S.names.forEach((n,i)=>{
+    if(!S.alive.has(i))return;
+    const d=document.createElement("div");d.className="voteitem";
+    const teamLbl=S.mode==="team"?`<span style="font-size:11px;color:#aaa">Team ?</span>`:"";
+    d.innerHTML=`<span>${n}</span>${teamLbl}`;
+    d.onclick=()=>askVote(i);
+    l.appendChild(d);
+  });
+  show("s-vote");
+}
+function askVote(i){S.pending=i;$("confirmName").textContent=`Vote out ${S.names[i]}?`;$("confirmModal").classList.add("show");}
+function closeModal(){$("confirmModal").classList.remove("show");S.pending=null;}
+function confirmVote(){$("confirmModal").classList.remove("show");runReveal(S.pending);}
+
+/* ---------- reveal ---------- */
+function runReveal(p){
+  show("s-reveal");
+  $("drumPhase").classList.remove("hidden");$("verdictPhase").classList.add("hidden");
+  sndDrum();
+  setTimeout(()=>{
+    const isImp=S.imposters.has(p);const team=S.playerTeam[p];
+    $("drumPhase").classList.add("hidden");$("verdictPhase").classList.remove("hidden");
+    const vt=$("verdictText"),vs=$("verdictSub");
+    if(isImp){
+      vt.className="verdict ok";
+      vt.textContent = S.mode==="team" ? `Team ${team+1} lost their imposter` : "Imposter caught!";
+      vs.textContent=""; sndCaught();
+      S.caught.add(team);             // team can't win; teammates stay
+      S.alive.delete(p);              // the imposter leaves
+    }else{
+      vt.className="verdict bad";
+      vt.textContent = S.mode==="team" ? `Team ${team+1} lost an innocent` : "Innocent — wrong vote";
+      vs.textContent=""; sndInnocent();
+      S.alive.delete(p);              // wrong vote eliminates innocent
+    }
+    S.lastWasImp=isImp;
+  },1600);
+}
+function afterVerdict(){
+  // win checks
+  if(S.mode==="team"){
+    const aliveTeams=S.teams.map((_,t)=>t).filter(t=>!S.caught.has(t));
+    if(aliveTeams.length===1){return declareWinner(aliveTeams[0]);}
+  }else{
+    const aliveImps=[...S.alive].filter(p=>S.imposters.has(p));
+    const aliveInno=[...S.alive].filter(p=>!S.imposters.has(p));
+    if(aliveImps.length===0){return declareWinner(0,true);}            // all imposters caught → players win
+    if(aliveImps.length>=aliveInno.length){return declareWinner(0,false);} // imposters reach parity → imposters win
+  }
+  // next round / word swap
+  S.round++; S.sinceWord++;
+  if(S.sinceWord>=2){
+    S.sinceWord=0;
+    const clues=pickWord();let ci=0;
+    [...S.imposters].forEach(imp=>{if(S.alive.has(imp))S.clue[imp]=clues[ci++%clues.length];});
+    beginDeal([...S.alive]); // new word -> re-deal to survivors
+  }else{
+    renderVote();
+  }
+}
+
+/* ---------- winner ---------- */
+function declareWinner(teamIdx,playersWin){
+  show("s-winner");sndWin();
+  if(S.mode==="team"){
+    $("winTeam").textContent=`Team ${teamIdx+1} wins`;
+    $("winSub").textContent="Their imposter was never caught.";
+  }else{
+    $("winTeam").textContent=playersWin?"Players win":"Imposter wins";
+    $("winSub").textContent=playersWin?"The imposter was caught.":"The imposter survived to the end.";
+  }
+  const box=$("revealAll");box.innerHTML="";
+  S.teams.forEach((team,t)=>{
+    const b=document.createElement("div");b.className="teamblock";
+    const head=S.mode==="team"?`Team ${t+1}`:"Everyone";
+    let rows=team.map(p=>`<div class="m"><span>${S.names[p]}</span>${S.imposters.has(p)?'<span class="imp">IMPOSTER</span>':'<span style="color:#bbb;font-size:11px">innocent</span>'}</div>`).join("");
+    b.innerHTML=`<h4>${head}</h4>${rows}`;box.appendChild(b);
+  });
+}
+function playAgainSame(){show("s-setup");renderNames();validateTeams();}
+function playAgainNew(){S.names=[];renderNames();validateTeams();show("s-setup");}
+
+/* init */
+renderNames();
+</script>
+</body>
+</html>

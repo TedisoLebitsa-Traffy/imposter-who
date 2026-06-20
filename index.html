@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#0e0b1a">
+<meta name="description" content="Free, offline party game. Everyone gets the same secret word — except the imposters. Pass the phone, give clues, vote them out.">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Imposter">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+<link rel="manifest" href="manifest.json">
+<title>Imposter Who?</title>
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<div class="app" id="app">
+
+  <!-- Top bar: quit button only appears mid-game -->
+  <header class="topbar" id="topbar">
+    <button class="iconbtn quitbtn" id="quitBtn" type="button" aria-label="Quit to home" hidden>✕</button>
+    <div class="topbar-meta" id="topbarMeta" aria-live="polite"></div>
+  </header>
+
+  <main class="stage" id="stage">
+
+    <!-- 1. HOME -->
+    <section class="screen is-active" id="s-home" aria-label="Home">
+      <div class="screen-scroll">
+        <div class="brand">
+          <h1 class="logo">IMPOSTER<span class="logo-mark">WHO?</span></h1>
+          <p class="tagline">Free · offline · pass the phone</p>
+        </div>
+
+        <p class="pitch">Everyone gets the same secret word — except the <b>imposters</b>, who get a vague clue. Give one-word clues out loud, then vote the fakes out.</p>
+
+        <div class="label" id="modeLabel">Game mode</div>
+        <div class="seg" id="modeSeg" role="tablist" aria-labelledby="modeLabel">
+          <button type="button" role="tab" data-mode="classic" class="is-on" aria-selected="true">Classic</button>
+          <button type="button" role="tab" data-mode="team" aria-selected="false">Team</button>
+        </div>
+        <p class="hint" id="modeHint"></p>
+
+        <div class="label">Category</div>
+        <div class="select-wrap">
+          <select class="field select" id="categorySel" aria-label="Category">
+            <option value="random">🎲 Random — draw from everything</option>
+          </select>
+        </div>
+
+        <button class="switchbar" id="soundBar" type="button" role="switch" aria-checked="true">
+          <span class="switchbar-label"><span class="switchbar-icon" id="soundIcon">🔊</span> Sound effects</span>
+          <span class="toggle is-on" id="soundToggle" aria-hidden="true"></span>
+        </button>
+
+        <div class="spacer"></div>
+        <button class="btn btn-primary" id="homeContinue" type="button">Continue</button>
+      </div>
+    </section>
+
+    <!-- 2. SETUP -->
+    <section class="screen" id="s-setup" aria-label="Setup">
+      <div class="screen-scroll">
+        <button class="backlink" id="setupBack" type="button">← Back</button>
+        <h2 class="screen-title">Who's playing?</h2>
+
+        <form class="addrow" id="addForm" autocomplete="off">
+          <input class="field" id="nameInput" placeholder="Add a player" maxlength="20"
+                 inputmode="text" enterkeyhint="done" aria-label="Player name">
+          <button class="btn btn-add" id="addBtn" type="submit" aria-label="Add player">+</button>
+        </form>
+        <p class="namecount" id="nameCount" aria-live="polite"></p>
+        <div class="namegrid" id="nameList"></div>
+        <p class="empty" id="nameEmpty">No players yet — add a few names to begin.</p>
+
+        <button class="switchbar switchbar-sm" id="rememberBar" type="button" role="switch" aria-checked="false">
+          <span class="switchbar-label">Remember these names</span>
+          <span class="toggle" id="rememberToggle" aria-hidden="true"></span>
+        </button>
+
+        <!-- Classic config -->
+        <div id="classicSetup" hidden>
+          <div class="label">Number of imposters</div>
+          <div class="stepper" id="impStepper">
+            <button type="button" class="stepbtn" data-step="-1" aria-label="Fewer imposters">−</button>
+            <div class="stepper-val"><span id="impCount">1</span></div>
+            <button type="button" class="stepbtn" data-step="1" aria-label="More imposters">+</button>
+          </div>
+          <p class="hint" id="impHelp"></p>
+        </div>
+
+        <!-- Team config -->
+        <div id="teamSetup" hidden>
+          <div class="label">Number of teams</div>
+          <div class="stepper" id="teamStepper">
+            <button type="button" class="stepbtn" data-step="-1" aria-label="Fewer teams">−</button>
+            <div class="stepper-val"><span id="teamCount">3</span></div>
+            <button type="button" class="stepbtn" data-step="1" aria-label="More teams">+</button>
+          </div>
+          <p class="hint" id="teamHelp"></p>
+        </div>
+
+        <div class="warn" id="setupWarn" hidden></div>
+
+        <div class="spacer"></div>
+        <button class="btn btn-primary" id="startBtn" type="button">Start game</button>
+      </div>
+    </section>
+
+    <!-- 3. CARD DEAL (pass the phone, hold to reveal) -->
+    <section class="screen" id="s-deal" aria-label="Card deal">
+      <div class="screen-scroll">
+        <p class="passto">Pass the phone to <b id="dealName">—</b></p>
+        <div class="dealcard" id="dealCard" role="button" tabindex="0"
+             aria-label="Press and hold to reveal your word">
+          <div class="dealcard-front" id="dealFront">
+            <div class="deal-who" id="dealWho">—</div>
+            <div class="deal-press">👆 press &amp; hold to reveal</div>
+          </div>
+          <div class="dealcard-back" id="dealBack" hidden>
+            <div class="reveal-team" id="revealTeam"></div>
+            <div class="reveal-role" id="revealRole"></div>
+            <div class="reveal-word" id="revealWord"></div>
+            <div class="deal-press">release to hide</div>
+          </div>
+        </div>
+        <p class="roundinfo" id="dealRound"></p>
+        <div class="spacer"></div>
+        <button class="btn btn-primary" id="dealNext" type="button">Next player →</button>
+      </div>
+    </section>
+
+    <!-- 4. VOTE -->
+    <section class="screen" id="s-vote" aria-label="Vote">
+      <div class="screen-scroll">
+        <div class="label" id="voteRound">Round 1</div>
+        <h2 class="screen-title">Vote someone out</h2>
+        <p class="hint">Give one-word clues out loud, debate, then tap whoever the room agrees on. Ties → rock-paper-scissors in real life.</p>
+        <div class="votelist" id="voteList"></div>
+      </div>
+    </section>
+
+    <!-- 5. REVEAL (drumroll → verdict) -->
+    <section class="screen" id="s-reveal" aria-label="Reveal">
+      <div class="screen-scroll screen-center">
+        <div class="reveal-stage">
+          <div class="drum" id="drumPhase">Drumroll<span class="dots"><span>.</span><span>.</span><span>.</span></span></div>
+          <div id="verdictPhase" hidden>
+            <div class="verdict" id="verdictText"></div>
+            <button class="btn btn-primary verdict-btn" id="verdictBtn" type="button">Continue</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 6. WINNER (result + full reveal + play again) -->
+    <section class="screen" id="s-winner" aria-label="Winner">
+      <div class="screen-scroll">
+        <div class="winner-head">
+          <div class="trophy">🏆</div>
+          <div class="winteam" id="winTeam">—</div>
+          <div class="winsub" id="winSub"></div>
+        </div>
+        <div class="label">The full reveal</div>
+        <div id="revealAll"></div>
+        <div class="spacer"></div>
+        <button class="btn btn-primary" id="againSame" type="button">Play again — same names</button>
+        <button class="btn btn-ghost" id="againNew" type="button">Enter new names</button>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Vote confirm modal -->
+  <div class="modal" id="voteModal" role="dialog" aria-modal="true" aria-labelledby="voteModalTitle" hidden>
+    <div class="sheet">
+      <h3 id="voteModalTitle">Vote out?</h3>
+      <p>Make sure the room agrees — this can't be undone.</p>
+      <button class="btn btn-danger" id="voteConfirm" type="button">Yes, vote out</button>
+      <button class="btn btn-ghost" id="voteCancel" type="button">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Quit confirm modal -->
+  <div class="modal" id="quitModal" role="dialog" aria-modal="true" aria-labelledby="quitModalTitle" hidden>
+    <div class="sheet">
+      <h3 id="quitModalTitle">Quit to home?</h3>
+      <p>This game will end and can't be recovered.</p>
+      <button class="btn btn-danger" id="quitConfirm" type="button">Yes, quit</button>
+      <button class="btn btn-ghost" id="quitCancel" type="button">Keep playing</button>
+    </div>
+  </div>
+
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/sound.js"></script>
+<script src="js/app.js"></script>
+<script src="js/game.js"></script>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    });
+  }
+</script>
+</body>
+</html>

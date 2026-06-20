@@ -1,0 +1,10 @@
+# dependencies (only used transiently to generate icons)
+node_modules/
+package-lock.json
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+*.log
+
+# local dev server config is fine to keep; nothing else to ignore
