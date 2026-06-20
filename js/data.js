@@ -4,7 +4,7 @@
    and a pool of vague `clues` (one assigned per imposter, all
    different). Clues describe the word fairly without naming it.
 
-   Full build: 14 categories, 15-20 entries each, same shape.
+   Full build: 15 categories, 15-20 entries each, same shape.
    ============================================================ */
 
 const BANK = {
@@ -307,6 +307,28 @@ const BANK = {
     { word: "Jol",           clues: ["party", "fun", "outing", "vibe"] },
     { word: "Tjommie",       clues: ["friend", "pal", "buddy", "mate"] },
     { word: "Kasi",          clues: ["township", "neighbourhood", "local", "vibe"] },
+  ],
+  "Tech & Online Life": [
+    { word: "WhatsApp",      clues: ["chat", "messaging", "groups", "ticks"] },
+    { word: "YouTube",       clues: ["videos", "subscribe", "watch", "creators"] },
+    { word: "Netflix",       clues: ["streaming", "series", "binge", "subscription"] },
+    { word: "Instagram",     clues: ["photos", "stories", "feed", "filters"] },
+    { word: "TikTok",        clues: ["short", "trends", "scroll", "dances"] },
+    { word: "Spotify",       clues: ["music", "playlists", "stream", "podcasts"] },
+    { word: "Takealot",      clues: ["shopping", "delivery", "online", "parcels"] },
+    { word: "Uber",          clues: ["rides", "driver", "app", "pickup"] },
+    { word: "Mr D",          clues: ["food", "delivery", "courier", "order"] },
+    { word: "Capitec",       clues: ["banking", "app", "fintech", "account"] },
+    { word: "SnapScan",      clues: ["payment", "scan", "code", "checkout"] },
+    { word: "Showmax",       clues: ["streaming", "local", "series", "subscription"] },
+    { word: "Fibre",         clues: ["internet", "connection", "speed", "broadband"] },
+    { word: "Loadshedding",  clues: ["power", "schedule", "outage", "blackout"] },
+    { word: "Gmail",         clues: ["email", "inbox", "messages", "compose"] },
+    { word: "Google Maps",   clues: ["directions", "navigation", "route", "location"] },
+    { word: "Zoom",          clues: ["meeting", "video", "call", "screen"] },
+    { word: "Influencer",    clues: ["followers", "content", "sponsored", "online"] },
+    { word: "Podcast",       clues: ["episodes", "audio", "host", "listen"] },
+    { word: "Airtime",       clues: ["mobile", "topup", "credit", "voucher"] },
   ],
 };
 

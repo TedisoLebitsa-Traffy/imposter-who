@@ -4,7 +4,7 @@
    Strategy: cache-first for app shell; bump CACHE to ship updates.
    ============================================================ */
 
-const CACHE = "imposter-v8";
+const CACHE = "imposter-v9";
 
 const ASSETS = [
   "./",
