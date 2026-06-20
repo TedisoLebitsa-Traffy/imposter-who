@@ -32,7 +32,9 @@ Everyone gets the same secret word — except the **imposters**, who only see a 
 - 📴 **Fully offline** — works with no internet after the first load. No backend, no accounts, no sign-up.
 - 📲 **Installable** — add it to your phone's home screen and it runs like a native app (PWA).
 - 🔊 **Sound** — synthesised drumroll and verdict cues, with a mute toggle.
-- 🗂️ **10 themed categories** plus a Random option, each with plenty of words and fair, vague clues.
+- 🗂️ **Lots of themed categories** (including South African culture) plus a Random option, each with fair, vague clues.
+- ✏️ **Make your own category** — type a list of words (clues optional; we'll auto-generate vague ones). Saved on your device and added to the list.
+- 🙈 **Secret vote (optional)** — instead of voting out loud, pass the phone and each player taps their vote privately; the app tallies and reveals the result.
 - 🆓 **Free and private** — nothing leaves your device. Player names can optionally be remembered between games.
 - ♿ **Accessible** — large tap targets, visible focus states, and respects reduced-motion preferences.
 

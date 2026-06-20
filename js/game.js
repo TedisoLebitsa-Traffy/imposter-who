@@ -11,6 +11,8 @@
 
 let dealQueue = [];
 let pendingVote = null;
+let ballotQueue = [];   // remaining voters (secret vote)
+let ballots = {};       // voterIndex -> candidateIndex
 
 /* ---------- topbar round meta ---------- */
 function updateTopbar() {
@@ -58,8 +60,9 @@ function setDealReveal(on) {
     } else {
       teamEl.hidden = true;
     }
-    $("revealRole").textContent = isImp ? "Your clue word" : "The secret word";
-    $("revealWord").textContent = isImp ? g.clue[p] : g.word;
+    $("revealRole").textContent = isImp ? "You are the imposter" : "The secret word";
+    $("revealRole").classList.toggle("is-imp", isImp);
+    $("revealWord").textContent = isImp ? `clue: ${g.clue[p]}` : g.word;
     $("dealFront").hidden = true;
     $("dealBack").hidden = false;
     card.classList.add("is-revealed", isImp ? "is-imposter" : "is-secret");
@@ -102,6 +105,7 @@ function bindHold() {
    VOTE
    ============================================================ */
 function startVote() {
+  if (S.secretVote) { beginSecretVote(); return; }
   renderVote();
   show("s-vote");
 }
@@ -135,6 +139,81 @@ function askVote(i) {
   pendingVote = i;
   $("voteModalTitle").textContent = `Vote out ${S.game.names[i]}?`;
   $("voteModal").hidden = false;
+}
+
+/* ============================================================
+   SECRET VOTE (pass-the-phone private ballot)
+   ============================================================ */
+function beginSecretVote() {
+  const g = S.game;
+  ballotQueue = shuffle([...g.alive]); // randomise voter order
+  ballots = {};
+  show("s-secretvote");
+  ballotShow();
+}
+
+function ballotShow() {
+  const g = S.game;
+  $("secretRound").textContent = `Round ${g.round}`;
+  updateTopbar();
+  if (ballotQueue.length === 0) { tallyVotes(); return; }
+
+  const voter = ballotQueue[0];
+  const total = g.alive.size;
+  const done = total - ballotQueue.length;
+  $("ballotName").textContent = g.names[voter];
+  $("ballotProgress").textContent = `Voter ${done + 1} of ${total}`;
+
+  const list = $("ballotList");
+  list.innerHTML = "";
+  g.names.forEach((name, i) => {
+    if (!g.alive.has(i) || i === voter) return; // can't vote yourself
+    const item = document.createElement("button");
+    item.type = "button";
+    item.className = "voteitem";
+    const nameEl = document.createElement("span");
+    nameEl.textContent = name;
+    item.appendChild(nameEl);
+    item.addEventListener("click", () => castBallot(voter, i));
+    list.appendChild(item);
+  });
+}
+
+function castBallot(voter, candidate) {
+  ballots[voter] = candidate;
+  ballotQueue.shift();
+  ballotShow(); // advance to the next voter (choice never shown again)
+}
+
+function tallyVotes() {
+  const counts = {};
+  Object.values(ballots).forEach((c) => { counts[c] = (counts[c] || 0) + 1; });
+  let max = 0;
+  Object.values(counts).forEach((v) => { if (v > max) max = v; });
+  const top = Object.keys(counts).filter((k) => counts[k] === max).map(Number);
+
+  if (top.length === 1) {
+    runReveal(top[0]);
+  } else {
+    showTie(top); // ties → room settles with rock-paper-scissors
+  }
+}
+
+function showTie(tied) {
+  const g = S.game;
+  const list = $("tieList");
+  list.innerHTML = "";
+  tied.forEach((i) => {
+    const item = document.createElement("button");
+    item.type = "button";
+    item.className = "voteitem";
+    const nameEl = document.createElement("span");
+    nameEl.textContent = g.names[i];
+    item.appendChild(nameEl);
+    item.addEventListener("click", () => { $("tieModal").hidden = true; runReveal(i); });
+    list.appendChild(item);
+  });
+  $("tieModal").hidden = false;
 }
 
 /* ============================================================
@@ -271,6 +350,11 @@ function initGame() {
   });
 
   $("verdictBtn").addEventListener("click", afterVerdict);
+
+  $("tieCancel").addEventListener("click", () => {
+    $("tieModal").hidden = true;
+    startVote(); // redo the ballot
+  });
 
   $("againSame").addEventListener("click", () => { goSetup(); });
   $("againNew").addEventListener("click", () => { S.names = []; goSetup(); });

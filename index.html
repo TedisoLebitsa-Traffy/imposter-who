@@ -48,11 +48,18 @@
             <option value="random">🎲 Random — draw from everything</option>
           </select>
         </div>
+        <button class="linkbtn" id="newCatBtn" type="button">＋ Create your own category</button>
 
         <button class="switchbar" id="soundBar" type="button" role="switch" aria-checked="true">
           <span class="switchbar-label"><span class="switchbar-icon" id="soundIcon">🔊</span> Sound effects</span>
           <span class="toggle is-on" id="soundToggle" aria-hidden="true"></span>
         </button>
+
+        <button class="switchbar" id="secretBar" type="button" role="switch" aria-checked="false">
+          <span class="switchbar-label"><span class="switchbar-icon">🙈</span> Secret vote</span>
+          <span class="toggle" id="secretToggle" aria-hidden="true"></span>
+        </button>
+        <p class="hint" id="secretHint">Off: the room votes out loud. On: pass the phone so each player taps their vote privately.</p>
 
         <div class="spacer"></div>
         <button class="btn btn-primary" id="homeContinue" type="button">Continue</button>
@@ -141,6 +148,18 @@
       </div>
     </section>
 
+    <!-- 4b. SECRET VOTE (pass-the-phone private ballot) -->
+    <section class="screen" id="s-secretvote" aria-label="Secret vote">
+      <div class="screen-scroll">
+        <div class="label" id="secretRound">Round 1</div>
+        <p class="passto">Pass the phone to <b id="ballotName">—</b></p>
+        <p class="ballot-progress" id="ballotProgress"></p>
+        <h2 class="screen-title">Tap your vote</h2>
+        <p class="hint">Keep it secret — tap who you want out, then pass the phone on. No one sees your choice.</p>
+        <div class="votelist" id="ballotList"></div>
+      </div>
+    </section>
+
     <!-- 5. REVEAL (drumroll → verdict) -->
     <section class="screen" id="s-reveal" aria-label="Reveal">
       <div class="screen-scroll screen-center">
@@ -179,6 +198,31 @@
       <p>Make sure the room agrees — this can't be undone.</p>
       <button class="btn btn-danger" id="voteConfirm" type="button">Yes, vote out</button>
       <button class="btn btn-ghost" id="voteCancel" type="button">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Tie-break modal (secret vote) -->
+  <div class="modal" id="tieModal" role="dialog" aria-modal="true" aria-labelledby="tieModalTitle" hidden>
+    <div class="sheet">
+      <h3 id="tieModalTitle">It's a tie!</h3>
+      <p id="tieText">Settle it with rock-paper-scissors in real life, then tap the agreed name.</p>
+      <div class="votelist" id="tieList"></div>
+      <button class="btn btn-ghost" id="tieCancel" type="button">Re-vote instead</button>
+    </div>
+  </div>
+
+  <!-- Create custom category modal -->
+  <div class="modal" id="customModal" role="dialog" aria-modal="true" aria-labelledby="customModalTitle" hidden>
+    <div class="sheet sheet-lg sheet-left">
+      <h3 id="customModalTitle">Create a category</h3>
+      <p>One word per line. Clues are optional — type <b>word: clue1, clue2</b> to set your own, or just a word and we'll make a vague clue for you.</p>
+      <input class="field" id="customName" placeholder="Category name" maxlength="28" aria-label="Category name">
+      <textarea class="field customwords" id="customWords" rows="7" aria-label="Words"
+        placeholder="apple&#10;banana: yellow, fruit&#10;mango&#10;grape"></textarea>
+      <div class="warn" id="customWarn" hidden></div>
+      <button class="btn btn-primary" id="customSave" type="button">Save category</button>
+      <button class="btn btn-ghost" id="customCancel" type="button">Cancel</button>
+      <div id="customManage"></div>
     </div>
   </div>
 

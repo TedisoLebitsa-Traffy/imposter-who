@@ -10,6 +10,7 @@
 const $ = (id) => document.getElementById(id);
 const STORAGE_KEY = "imposter.names.v1";
 const REMEMBER_KEY = "imposter.remember.v1";
+const CUSTOM_KEY = "imposter.customcats.v1";
 
 /* ---------- state ---------- */
 const S = {
@@ -19,10 +20,16 @@ const S = {
   imposterCount: 1,
   teamCount: 3,
   remember: false,
+  secretVote: false,      // pass-the-phone private ballot
 
-  // built on Start (consumed by the deal screen, added next)
+  // built on Start (consumed by the deal/vote flow in game.js)
   game: null,
 };
+
+/* ---------- word bank, including user-made categories ---------- */
+const customCats = {};    // name -> [{ word, clues }]
+function effectiveBank() { return Object.assign({}, BANK, customCats); }
+function effectiveCategories() { return Object.keys(effectiveBank()); }
 
 /* ---------- safe storage (game must work without it) ---------- */
 const store = {
@@ -47,7 +54,7 @@ function maxImposters(playerCount) {
 }
 
 /* ---------- screen router ---------- */
-const IN_GAME = new Set(["s-deal", "s-vote", "s-reveal"]);
+const IN_GAME = new Set(["s-deal", "s-vote", "s-secretvote", "s-reveal"]);
 function show(id) {
   const target = $(id);
   if (!target) return;
@@ -97,14 +104,30 @@ function setMode(mode) {
   $("modeHint").textContent = MODE_HINTS[mode];
 }
 
-function fillCategories() {
+function fillCategories(selected) {
   const sel = $("categorySel");
-  CATEGORIES.forEach((c) => {
+  const current = selected || sel.value || "random";
+  // wipe everything except the leading "random" option
+  sel.querySelectorAll('optgroup, option:not([value="random"])').forEach((n) => n.remove());
+
+  const mkOpt = (c) => {
     const o = document.createElement("option");
     o.value = c;
     o.textContent = c;
-    sel.appendChild(o);
-  });
+    return o;
+  };
+  CATEGORIES.forEach((c) => sel.appendChild(mkOpt(c)));
+
+  const customKeys = Object.keys(customCats);
+  if (customKeys.length) {
+    const og = document.createElement("optgroup");
+    og.label = "Your categories";
+    customKeys.forEach((c) => og.appendChild(mkOpt(c)));
+    sel.appendChild(og);
+  }
+
+  // restore selection if it still exists, else fall back to random
+  sel.value = [...sel.options].some((o) => o.value === current) ? current : "random";
 }
 
 function setSound(on) {
@@ -114,10 +137,18 @@ function setSound(on) {
   $("soundIcon").textContent = on ? "🔊" : "🔇";
 }
 
+function setSecret(on) {
+  S.secretVote = on;
+  $("secretToggle").classList.toggle("is-on", on);
+  $("secretBar").setAttribute("aria-checked", on ? "true" : "false");
+}
+
 function initHome() {
   setMode(S.mode);
+  loadCustomCats();
   fillCategories();
-  setSound(true); // default on
+  setSound(true);   // default on
+  setSecret(false); // default off
 
   $("modeSeg").addEventListener("click", (e) => {
     const b = e.target.closest("button");
@@ -128,10 +159,129 @@ function initHome() {
     Sound.unlock();
     setSound(on);
   });
+  $("secretBar").addEventListener("click", () => setSecret(!S.secretVote));
+  $("newCatBtn").addEventListener("click", openCustomModal);
+  initCustomModal();
+
   $("homeContinue").addEventListener("click", () => {
     S.category = $("categorySel").value;
     goSetup();
   });
+}
+
+/* ============================================================
+   CUSTOM CATEGORIES (create / save / delete)
+   ============================================================ */
+function loadCustomCats() {
+  let raw;
+  try { raw = JSON.parse(store.get(CUSTOM_KEY) || "{}"); } catch { raw = {}; }
+  if (!raw || typeof raw !== "object") return;
+  Object.entries(raw).forEach(([name, entries]) => {
+    if (!Array.isArray(entries)) return;
+    const clean = entries
+      .filter((e) => e && typeof e.word === "string" && Array.isArray(e.clues) && e.clues.length)
+      .map((e) => ({ word: e.word, clues: e.clues.filter((c) => typeof c === "string" && c.trim()) }))
+      .filter((e) => e.clues.length);
+    if (clean.length) customCats[name] = clean;
+  });
+}
+
+function saveCustomCats() { store.set(CUSTOM_KEY, JSON.stringify(customCats)); }
+
+/** Build a vague clue pool for a word from its sibling words. */
+function autoCluePool(word, allWords) {
+  const sibs = allWords.filter((w) => w.toLowerCase() !== word.toLowerCase());
+  const pool = shuffle(sibs).slice(0, 4);
+  return pool.length ? pool : ["mystery", "secret", "hidden", "vague"];
+}
+
+/** Parse the textarea into [{word, clues}] entries (clues auto-filled). */
+function parseCustomEntries(text) {
+  const seen = new Set();
+  const raw = [];
+  text.split(/\n/).forEach((line) => {
+    const t = line.trim();
+    if (!t) return;
+    let word = t, clues = [];
+    const ci = t.indexOf(":");
+    if (ci > -1) {
+      word = t.slice(0, ci).trim();
+      clues = t.slice(ci + 1).split(",").map((s) => s.trim()).filter(Boolean);
+    }
+    if (!word) return;
+    const key = word.toLowerCase();
+    if (seen.has(key)) return;
+    seen.add(key);
+    raw.push({ word, clues });
+  });
+
+  const allWords = raw.map((r) => r.word);
+  return raw.map((r) => {
+    let clues = r.clues.filter((c) => c.toLowerCase() !== r.word.toLowerCase());
+    if (!clues.length) clues = autoCluePool(r.word, allWords);
+    return { word: r.word, clues };
+  });
+}
+
+function openCustomModal() {
+  $("customName").value = "";
+  $("customWords").value = "";
+  $("customWarn").hidden = true;
+  renderCustomManage();
+  $("customModal").hidden = false;
+  setTimeout(() => $("customName").focus(), 50);
+}
+
+function renderCustomManage() {
+  const box = $("customManage");
+  box.innerHTML = "";
+  const keys = Object.keys(customCats);
+  if (!keys.length) return;
+  keys.forEach((name) => {
+    const row = document.createElement("div");
+    row.className = "cuscat";
+    const label = document.createElement("span");
+    label.textContent = `${name} · ${customCats[name].length} words`;
+    const del = document.createElement("button");
+    del.type = "button";
+    del.className = "cuscat-del";
+    del.textContent = "Delete";
+    del.addEventListener("click", () => deleteCustomCat(name));
+    row.append(label, del);
+    box.appendChild(row);
+  });
+}
+
+function deleteCustomCat(name) {
+  delete customCats[name];
+  saveCustomCats();
+  fillCategories();
+  renderCustomManage();
+}
+
+function saveCustomCat() {
+  const name = $("customName").value.trim().replace(/\s+/g, " ");
+  const entries = parseCustomEntries($("customWords").value);
+  const warn = $("customWarn");
+  let msg = "";
+
+  if (!name) msg = "Give your category a name.";
+  else if (CATEGORIES.some((c) => c.toLowerCase() === name.toLowerCase())) msg = "That name matches a built-in category — pick another.";
+  else if (Object.keys(customCats).some((c) => c.toLowerCase() === name.toLowerCase())) msg = "You already have a category with that name.";
+  else if (entries.length < 4) msg = "Add at least 4 words (one per line).";
+
+  if (msg) { warn.textContent = msg; warn.hidden = false; return; }
+
+  customCats[name] = entries;
+  saveCustomCats();
+  fillCategories(name);
+  $("customModal").hidden = true;
+  toast(`Saved "${name}" · ${entries.length} words`);
+}
+
+function initCustomModal() {
+  $("customSave").addEventListener("click", saveCustomCat);
+  $("customCancel").addEventListener("click", () => { $("customModal").hidden = true; });
 }
 
 /* ============================================================
@@ -258,10 +408,12 @@ function validate() {
 
 /* ---------- build the game model on Start ---------- */
 function pickWordAndClues() {
-  const cat = S.category === "random"
-    ? CATEGORIES[Math.floor(Math.random() * CATEGORIES.length)]
-    : S.category;
-  const pool = BANK[cat];
+  const bank = effectiveBank();
+  const cats = effectiveCategories();
+  let cat = S.category === "random" ? cats[Math.floor(Math.random() * cats.length)] : S.category;
+  // guard: a remembered/selected category that no longer exists → random
+  if (!bank[cat] || !bank[cat].length) cat = cats[Math.floor(Math.random() * cats.length)];
+  const pool = bank[cat];
   const entry = pool[Math.floor(Math.random() * pool.length)];
   return { category: cat, word: entry.word, clues: shuffle(entry.clues) };
 }
