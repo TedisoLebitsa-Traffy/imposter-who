@@ -4,7 +4,7 @@
    Strategy: cache-first for app shell; bump CACHE to ship updates.
    ============================================================ */
 
-const CACHE = "imposter-v7";
+const CACHE = "imposter-v8";
 
 const ASSETS = [
   "./",
@@ -39,24 +39,26 @@ self.addEventListener("fetch", (event) => {
   const req = event.request;
   if (req.method !== "GET") return;
 
-  // Network-only is never needed (no backend). Cache-first, then
-  // fall back to network and cache the result for next time.
+  // Stale-while-revalidate: serve the cached copy instantly (stays fully
+  // offline + fast), but always re-fetch in the background so the next
+  // load picks up any updated assets. No backend is ever contacted —
+  // only the app's own static files.
   event.respondWith(
-    caches.match(req).then((cached) => {
-      if (cached) return cached;
-      return fetch(req)
+    caches.open(CACHE).then(async (cache) => {
+      const cached = await cache.match(req);
+      const network = fetch(req)
         .then((res) => {
-          // only cache same-origin successful responses
           if (res && res.ok && new URL(req.url).origin === self.location.origin) {
-            const copy = res.clone();
-            caches.open(CACHE).then((cache) => cache.put(req, copy));
+            cache.put(req, res.clone());
           }
           return res;
         })
-        .catch(() => {
-          // offline navigation fallback → app shell
-          if (req.mode === "navigate") return caches.match("./index.html");
-        });
+        .catch(() => null);
+
+      // cached first (fast/offline); otherwise wait on the network,
+      // and fall back to the app shell for offline navigations.
+      return cached || (await network) ||
+        (req.mode === "navigate" ? cache.match("./index.html") : Response.error());
     })
   );
 });
