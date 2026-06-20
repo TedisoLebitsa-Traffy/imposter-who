@@ -479,7 +479,12 @@ body {
 .dealcard:active { transform: scale(0.99); }
 .dealcard.is-revealed { border-color: transparent; }
 .dealcard.is-revealed::before { opacity: 1; }
-.dealcard.is-imposter::before { background: linear-gradient(135deg, #ff5c8a 0%, #ff8f5c 100%); }
+/* imposter reveal: stark red-on-black */
+.dealcard.is-imposter { border-color: #ff3b3b; }
+.dealcard.is-imposter::before { background: #000000; }
+.dealcard.is-imposter .reveal-role.is-imp { color: #ff3b3b; }
+.dealcard.is-imposter .reveal-team { color: #ff8a8a; }
+.dealcard.is-imposter .deal-press { color: rgba(255, 255, 255, 0.6); }
 .deal-who { font-size: 32px; font-weight: 900; letter-spacing: -0.5px; }
 .deal-press {
   font-size: 12px;
