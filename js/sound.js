@@ -61,13 +61,20 @@ const Sound = (() => {
 
   const cues = {
     drumroll() {
-      // Accelerating snare-like roll, ~1.4s, building tension.
+      // Classic snare roll: a steady buzz that accelerates and swells
+      // over 3 seconds, then lands on a final accent.
+      const total = 3.0;
       let t = 0;
-      for (let i = 0; i < 22; i++) {
-        hit(t, 0.06, 0.12 + i * 0.004);
-        t += Math.max(0.045, 0.11 - i * 0.003);
+      while (t < total - 0.04) {
+        const p = t / total;               // 0 → 1 over the roll
+        const interval = 0.06 - p * 0.028;  // accelerate: ~17 → ~30 hits/sec
+        const vol = 0.07 + p * 0.15;        // crescendo
+        hit(t, 0.045, vol);
+        t += interval;
       }
-      tone(70, t, 0.25, "sine", 0.18); // landing thud
+      // landing accent on the verdict
+      hit(total, 0.14, 0.32);
+      tone(90, total, 0.3, "square", 0.18);
     },
     imposterCaught() {
       // Sharp, dramatic sting.

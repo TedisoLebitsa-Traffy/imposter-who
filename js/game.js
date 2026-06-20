@@ -167,7 +167,7 @@ function runReveal(p) {
 
     $("drumPhase").hidden = true;
     $("verdictPhase").hidden = false;
-  }, 1600);
+  }, 3000);
 }
 
 function afterVerdict() {
