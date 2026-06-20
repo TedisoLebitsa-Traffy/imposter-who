@@ -54,7 +54,7 @@ function maxImposters(playerCount) {
 }
 
 /* ---------- screen router ---------- */
-const IN_GAME = new Set(["s-deal", "s-vote", "s-secretvote", "s-reveal"]);
+const IN_GAME = new Set(["s-deal", "s-starter", "s-vote", "s-secretvote", "s-reveal"]);
 function show(id) {
   const target = $(id);
   if (!target) return;

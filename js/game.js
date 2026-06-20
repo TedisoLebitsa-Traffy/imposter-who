@@ -13,6 +13,7 @@ let dealQueue = [];
 let pendingVote = null;
 let ballotQueue = [];   // remaining voters (secret vote)
 let ballots = {};       // voterIndex -> candidateIndex
+let lastStarter = null; // who opened the last round (avoid repeats)
 
 /* ---------- topbar round meta ---------- */
 function updateTopbar() {
@@ -27,6 +28,7 @@ function updateTopbar() {
 function beginDeal() {
   const g = S.game;
   if (!g) return;
+  if (g.round === 1) lastStarter = null; // fresh game
   dealQueue = [...g.alive];
   show("s-deal");
   dealShow();
@@ -34,7 +36,7 @@ function beginDeal() {
 
 function dealShow() {
   const g = S.game;
-  if (dealQueue.length === 0) { startVote(); return; }
+  if (dealQueue.length === 0) { showStarter(); return; }
   const p = dealQueue[0];
   $("dealName").textContent = g.names[p];
   $("dealWho").textContent = g.names[p];
@@ -277,8 +279,28 @@ function afterVerdict() {
     });
     beginDeal();
   } else {
-    startVote();
+    showStarter();
   }
+}
+
+/* ============================================================
+   WHO STARTS (after everyone has seen the word, before discussion)
+   ============================================================ */
+function showStarter() {
+  const g = S.game;
+  const alive = [...g.alive];
+  // pick a random alive player, avoiding last round's starter when possible
+  let pool = alive;
+  if (alive.length > 1 && lastStarter !== null && g.alive.has(lastStarter)) {
+    pool = alive.filter((p) => p !== lastStarter);
+  }
+  const starter = pool[Math.floor(Math.random() * pool.length)];
+  lastStarter = starter;
+
+  $("starterRound").textContent = `Round ${g.round}`;
+  $("starterName").textContent = g.names[starter];
+  updateTopbar();
+  show("s-starter");
 }
 
 /* ============================================================
@@ -339,6 +361,7 @@ function renderFullReveal() {
 function initGame() {
   bindHold();
   $("dealNext").addEventListener("click", dealNext);
+  $("starterGo").addEventListener("click", startVote);
 
   $("voteConfirm").addEventListener("click", () => {
     $("voteModal").hidden = true;
